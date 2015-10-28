@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+
+  "name": "stayfresh",
+  "description": "refresh pages automatically",
+  "version": "0.2",
+  "icons": {
+    "16": "icons/icon_16.png",
+    "48": "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+   },
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "alarms",
+    "http://*/",
+    "https://*/",
+    "storage"
+    ],
+
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}
