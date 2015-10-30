@@ -25,9 +25,11 @@ storage.get(null, function(items) {
 
 //gets list of current tabs
 function getTabs(callback) {
-	chrome.tabs.query({"url": target_urls}, function(tabs) {
-		callback(tabs);
-	});
+	if (target_urls.length > 0){
+		chrome.tabs.query({"url": target_urls}, function(tabs) {
+			callback(tabs);
+		});
+	}
 };
 
 //populates tab_ids array based on the target_urls array
