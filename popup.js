@@ -26,18 +26,34 @@ function getActiveTab(callback) {
 	});
 };
 
-//button function that adds url to storage and popup list
+//button function that adds page to storage and popup list
 function addUrl(){
 	getActiveTab(function(tab) {
 		addItem(tab[0]['url']); //add to html popup list
 		targetUrls.push(tab[0]['url']); //add to global variable
 
-		//delete old url array, then add updated one
+		//update storage
 		storage.remove('urls', function() {
 			storage.set({'urls': targetUrls});
 		});
 	});
 };
+
+//button function adding all pages with host name
+function addUrlHost() {
+	getActiveTab(function(tab) {
+		page_url = tab[0]['url'];
+		//slice url to host only, ending with /* to be parsed by executeScript() 
+		host_url = page_url.slice(0, page_url.indexOf('/', 8)) + '/*';
+		
+		addItem(host_url);
+		targetUrls.push(host_url);
+		//update storage
+		storage.remove('urls', function() {
+			storage.set({'urls': targetUrls});
+		});
+	});
+}
 
 //button function that clears url list and storage
 function clearUrls() {
@@ -55,12 +71,14 @@ function clearUrls() {
 document.addEventListener('DOMContentLoaded', function() {
 	var addButton = document.getElementById('add-url');
 	var clearButton = document.getElementById('clear-all');
+	var addAllButton = document.getElementById('add-all');
 
 	addButton.addEventListener('click', addUrl);
-
 	clearButton.addEventListener('click', clearUrls);
+	addAllButton.addEventListener('click', addUrlHost);
 
 	refresh_interval.addEventListener('input', function() {
 		storage.set({'interval': Number(refresh_interval.value)});
 	});
+
 });
