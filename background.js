@@ -1,16 +1,25 @@
+
 var target_urls = [], //pages to be refreshed
 	tab_ids = [],
-	refreshInterval = 10; //minutes before sending refresh script
+	refreshInterval = 30; //minutes before sending refresh script
+	storage = chrome.storage.sync;
 
-//updates extension based on storage
-chrome.storage.sync.get(null, function(items) {
+//initialize extension based on storage
+storage.get(null, function(items) {
 	if (items.urls == undefined) {
-		items.urls = []
+		items.urls = [];
 	}
 	else {
 		for (var i = 0; i < items.urls.length; i++){
 			target_urls.push(items.urls[i])
 		}
+	}
+	switch (items.interval) {
+		case undefined:
+			storage.set({'interval': 5});
+			break;
+		default:
+			refreshInterval = items.interval;
 	}
 });
 
@@ -33,9 +42,11 @@ function updateTabs() {
 
 //iterate through tab_ids, send script to each tab
 function sendScript() {
-	for (var i = 0; i<tab_ids.length; i++){
-		chrome.tabs.executeScript(tab_ids[i], {file: "pagescript.js"})
-	};
+	if (tab_ids.length > 0) {
+		for (var i = 0; i<tab_ids.length; i++){
+			chrome.tabs.executeScript(tab_ids[i], {file: "pagescript.js"})
+		};
+	}
 };
 
 //start timer that updates the list of all chrome tab id's every minute
@@ -45,13 +56,19 @@ chrome.alarms.create("tabs_alarm", {"when": Date.now(), "periodInMinutes": 1});
 chrome.alarms.create("script_alarm", {"when": Date.now(), "periodInMinutes": refreshInterval});
 
 chrome.alarms.onAlarm.addListener(function alarmAction(alarm) {
-	if (alarm['name'] == 'tabs_alarm') updateTabs();
+	if (alarm['name'] == 'tabs_alarm') updateTabs(); 
 	if (alarm['name'] == 'script_alarm') sendScript();
 });
 
 //update variables on storage change
 chrome.storage.onChanged.addListener(function() {
-	chrome.storage.sync.get(null, function(items) {
+	storage.get(null, function(items) {
 		target_urls = items.urls;
+
+		if (refreshInterval != items.interval){
+			refreshInterval = items.interval;
+			chrome.alarms.create("script_alarm", {"when": Date.now(), "periodInMinutes": refreshInterval});
+			console.log('reseting alarm')
+		}
 	});
 });
