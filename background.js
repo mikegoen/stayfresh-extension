@@ -7,7 +7,7 @@ var target_urls = [], //pages to be refreshed
 //initialize extension based on storage
 storage.get(null, function(items) {
 	if (items.urls == undefined) {
-		items.urls = [];
+		storage.set({'urls': []})
 	}
 	else {
 		for (var i = 0; i < items.urls.length; i++){
