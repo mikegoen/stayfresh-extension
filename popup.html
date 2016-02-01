@@ -1,32 +1,40 @@
 <html>
 <head>
-  <title></title>
-</head>
-<body>
-	<div style="width: 400px">
-		<h3>StayFresh: Automatic Page Refresher</h3>
+<style>
+* {
+  font-family: tahoma;
+  font-size: 12pt;
+}
+.container {
+    width: 620px;
+    min-height: 200px;
+    padding-right: 125px;
+}
+.left-column{
+  width: 300px;
+  margin: 0px;
+  float: left;
+  text-align: center;
+ }
 
-		<p>
-		<button id='add-url'> Add this page </button> OR 
-		<button id='add-all'> All pages at this domain</button>
-		</p>
+.right-column{
+  width: 300px;
+  margin: 0px;
+  float: right;
+}
 
-		<p>Time between refresh: 
-			<select id='interval'>
-			  <option value="2000">2 seconds</option>
-			  <option value="5000">5 seconds</option>
-			  <option value="10000">10 seconds</option>
-			  <option value="30000">30 seconds</option>
-			  <option value="60000">1 minute</option>
-			  <option value="180000">3 minutes</option>
-			  <option selected='selected' value="300000">5 minutes</option>
-			  <option value="600000">10 minutes</option>
-			  <option value="900000">15 minutes</option>
-			  <option value="1800000">30 minutes</option>
-			  <option value="3600000">1 hour</option>
-			</select>
+.button {
+  display: block;
+  height: 20px;
+  padding: 5px;
+  background-color: #38C;
+  margin: 5px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+}
 
-		</p>
+#clear-all {
 
 		<ul id="url-list"></ul>
 
@@ -34,4 +42,7 @@
 
 		<script src="popup.js"></script>
 	</div>
+  </div>
+</div>
+<script src="popup.js"></script>
 </body>
