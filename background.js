@@ -1,75 +1,79 @@
 
-var target_urls = [], //pages to be refreshed
-	tab_ids = [],
-	refreshInterval = 10000; //miliseconds before sending refresh script
-	storage = chrome.storage.sync;
+var refresherObjects = [],
+		storage = chrome.storage.local;
 
-//initialize extension based on storage
+//initialize extension from storage
 storage.get(null, function(items) {
-	if (items.urls == undefined) {
-		storage.set({'urls': []})
-	}
-	else {
-		for (var i = 0; i < items.urls.length; i++){
-			target_urls.push(items.urls[i])
+	Object.keys(items).forEach(function(key) {
+		if (key != 'pause'){
+			refresherObjects.push(new Refresher(items[key], key));
 		}
-	}
-	switch (items.interval) {
-		case undefined:
-			storage.set({'interval': 300000});
-			break;
-		default:
-			refreshInterval = items.interval;
+	});
+	if (items.pause == false) {
+		refresherObjects.forEach(function(obj) {
+			obj.startInterval();
+		});
 	}
 });
 
-//gets list of current tabs to be refreshed
-function getTabs(callback) {
-	if (target_urls.length > 0){
-		chrome.tabs.query({"url": target_urls}, function(tabs) {
-			callback(tabs);
-		});
-	}
-};
-
-//updates tab_ids array and send script to each tab
-function sendScript() {
-	tab_ids = []; //erases old tab ids
-
-	getTabs(function(tab_obj) {
-		for (var i = 0; i < Object.keys(tab_obj).length; i++){
-		tab_ids.push(tab_obj[i]["id"])
-		}
-
-		if (tab_ids.length > 0) {
-			for (var i = 0; i<tab_ids.length; i++){
-				//if timer greater than 3 minutes, use script with mouse detection
-				if (refreshInterval > 180000) {
-					chrome.tabs.executeScript(tab_ids[i], {file: "pagescript_2.js"})
-				}
-				else { chrome.tabs.executeScript(tab_ids[i], {file: "pagescript.js"})}
-			};
-		}
+//get active tabs matching url
+function getTabs(url, callback) {
+	var queryObj = {};
+	queryObj['url'] =	url;
+	chrome.tabs.query(queryObj, function(tabs) {
+		callback(tabs);
 	});
 };
 
-//start timer
-var scriptTimer = setInterval(function() {
-	sendScript();
-	}, refreshInterval);
+//define conscructor for refresher object
+var Refresher = function(milliseconds, url) {
+	this.milliseconds = milliseconds;
+	this.url = url;
+	var newUrl = this.url;
+	this.startInterval = function() {
+		this.interval = setInterval( function() {
+			var tab_ids = [];
+			getTabs(newUrl, function(tab_obj) {
+				for (var i = 0; i < Object.keys(tab_obj).length; i++){
+					tab_ids.push(tab_obj[i]["id"]);
+				}
+				if (tab_ids.length > 0) {
+					for (var i = 0; i<tab_ids.length; i++){
+						chrome.tabs.executeScript(tab_ids[i], {file: "pagescript.js"});
+					}
+				}
+			});
+		}, milliseconds);
+	}
+	this.clearInterval = function() {
+		clearInterval(this.interval);
+	}
+}
 
-//update variables on storage change
 chrome.storage.onChanged.addListener(function() {
 	storage.get(null, function(items) {
-		target_urls = items.urls;
+		console.log('storage change');
+		console.log(items);
 
-		if (refreshInterval != items.interval){
-			refreshInterval = items.interval;
-			console.log('changing interval based on storage');
-			clearInterval(scriptTimer);
-			scriptTimer = setInterval(function() {
-				sendScript();
-				}, refreshInterval);	
+		//re-create timers on storage change
+		refresherObjects.forEach(function(obj) {
+			obj.clearInterval();
+		});
+		refresherObjects = [];
+		Object.keys(items).forEach(function(key) {
+			if (key != 'pause') {
+				refresherObjects.push(new Refresher(items[key], key));
+			}
+		});
+		refresherObjects.forEach(function(obj) {
+				obj.startInterval();
+		});
+
+		//stop timers if paused
+		if (items.pause == true) {
+			refresherObjects.forEach(function(obj) {
+				obj.clearInterval();
+			});
 		}
 	});
 });

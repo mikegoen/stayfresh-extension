@@ -1,24 +1,40 @@
-var targetUrls;
-var refresh_interval = document.getElementById('interval'); 
-var storage = chrome.storage.sync;
+var refresh_interval = document.getElementById('interval');
+var storage = chrome.storage.local;
 
 // get info on popup load
 storage.get(null, function(items) {
-	//update page list
-	for (var i = 0; i < items.urls.length; i++){
-			addItem(items.urls[i])
-		}	
-	targetUrls = items.urls;
-	refresh_interval.value = items.interval;
+	Object.keys(items).forEach(function(key) {
+		if (key != 'pause'){
+			addItem(key, items[key]);
+		} else if (items[key] == true) {
+			$('#pause').text('PAUSED click to resume');
+			$('#pause').removeClass('pause-off');
+			$('#pause').addClass('pause-on');
+		}
+	});
 });
 
-//add to page list
-function addItem(text){
-	var m = document.createElement('li');
-	m.textContent = text;
-	mylist = document.getElementById('url-list');
-	mylist.appendChild(m);
-};
+//add to list of pages being refreshed
+function addItem(urlText, time) {
+	var timeText;
+	if (time < 60000) {
+		timeText = time / 1000 + ' seconds';
+	} else if (time == 60000) {
+		timeText = '1 minute';
+	} else {
+		timeText = time / 60000 + ' minutes';
+	}
+	var item = "<p class='url-item'>"+"<a>"+urlText+"</a>"+
+				"<br><span class='delete'>Delete</span>Time: "+timeText+"</p>";
+	$('#url-list').append(item);
+
+	//apply delete function on new element
+	$('.delete').click(function() {
+		var url = $(this).siblings().text();
+		storage.remove(url);
+		$(this).parent().remove();
+	})
+}
 
 function getActiveTab(callback) {
 	chrome.tabs.query({'currentWindow': true, 'active': true}, function(tab){
@@ -26,16 +42,14 @@ function getActiveTab(callback) {
 	});
 };
 
-//button function that adds page to storage and popup list
+//button function that adds page to storage and html list for refresh
 function addUrl(){
 	getActiveTab(function(tab) {
-		addItem(tab[0]['url']); //add to html popup list
-		targetUrls.push(tab[0]['url']); //add to global variable
-
-		//update storage
-		storage.remove('urls', function() {
-			storage.set({'urls': targetUrls});
-		});
+		var pageUrl = tab[0]['url'];
+		addItem(pageUrl, refresh_interval.value); //add to html popup list
+		var urlTimer = {};
+		urlTimer[pageUrl] = refresh_interval.value;
+		storage.set(urlTimer);
 	});
 };
 
@@ -43,42 +57,33 @@ function addUrl(){
 function addUrlHost() {
 	getActiveTab(function(tab) {
 		page_url = tab[0]['url'];
-		//slice url to host only, ending with /* to be parsed by executeScript() 
+
+		//slice url to host only, ending with /* to be parsed by executeScript()
 		host_url = page_url.slice(0, page_url.indexOf('/', 8)) + '/*';
-		
-		addItem(host_url);
-		targetUrls.push(host_url);
-		//update storage
-		storage.remove('urls', function() {
-			storage.set({'urls': targetUrls});
-		});
+
+		addItem(host_url, refresh_interval.value);
+		var urlTimer = {};
+		urlTimer[host_url] = refresh_interval.value;
+		storage.set(urlTimer);
 	});
 }
 
-//button function that clears url list and storage
-function clearUrls() {
-	storage.remove('urls', function() {
-			storage.set({'urls': []});
-		});
-
-	var pagelist = document.getElementById('url-list');
-
-	while (pagelist.firstChild) {
-		pagelist.removeChild(pagelist.firstChild);
+$('#pause').click(function() {
+	if ($(this).hasClass('pause-off')){
+		storage.set({'pause': true})
+		$(this).text('PAUSED click to resume');
+	} else {
+		storage.set({'pause': false})
+		$(this).text('Pause Refresh');
 	}
-};
+	$(this).toggleClass('pause-on');
+	$(this).toggleClass('pause-off');
+});
 
 document.addEventListener('DOMContentLoaded', function() {
 	var addButton = document.getElementById('add-url');
-	var clearButton = document.getElementById('clear-all');
 	var addAllButton = document.getElementById('add-all');
 
 	addButton.addEventListener('click', addUrl);
-	clearButton.addEventListener('click', clearUrls);
 	addAllButton.addEventListener('click', addUrlHost);
-
-	refresh_interval.addEventListener('input', function() {
-		storage.set({'interval': Number(refresh_interval.value)});
-	});
-
 });
