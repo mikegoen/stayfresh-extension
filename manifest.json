@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
 
-  "name": "Auto Page Refresher - Open Source",
+  "name": "StayFresh Page Refresher",
   "description": "refresh pages automatically",
-  "version": "1.0",
+  "version": "1.0.0",
   "icons": {
     "16": "icons/icon_16.png",
     "48": "icons/icon_48.png",
